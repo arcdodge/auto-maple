@@ -4,3 +4,6 @@ assets/models/
 .settings/
 *.iml
 resources/command_books/__pycache__/
+build/
+dist/
+main.spec

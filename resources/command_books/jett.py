@@ -39,7 +39,7 @@ def step(direction, target):
         elif direction == 'up':
             press(Key.JUMP, 1)
     # press(Key.FLASH_JUMP, num_presses)
-import cv2
+    
 class MoveAndAttack(Command):
     """移動到指定位置，並在移動途中偵測怪物並攻擊。"""
     def __init__(self, x, y, max_steps=15, forward_detection_width_multiplier=1.0, backward_detection_width_multiplier=0.5):
@@ -49,8 +49,6 @@ class MoveAndAttack(Command):
         self.forward_detection_width_multiplier = float(forward_detection_width_multiplier)
         self.backward_detection_width_multiplier = float(backward_detection_width_multiplier)
         self.prev_direction = ''
-        print(f"前方: {self.forward_detection_width_multiplier}\n")
-        print(f"後方: {self.backward_detection_width_multiplier}\n")
 
     def _new_direction(self, new):
         key_down(new)
@@ -70,7 +68,8 @@ class MoveAndAttack(Command):
             self.prev_direction = ''
             local_error = utils.distance(config.player_pos, point)
             global_error = utils.distance(config.player_pos, self.target)
-            while config.enabled and counter > 0 and \
+            # while config.enabled and counter > 0 and \
+            while config.enabled and \
                     local_error > settings.move_tolerance and \
                     global_error > settings.move_tolerance:
                 if toggle:
@@ -163,6 +162,10 @@ class MoveAndAttack(Command):
                 local_error = utils.distance(config.player_pos, point)
                 global_error = utils.distance(config.player_pos, self.target)
                 toggle = not toggle
+
+                if counter <= 0:
+                    print("[DEBUG]!!! MoveAndAttack: Reached max steps, exiting loop!!!")
+                    # break
             if self.prev_direction:
                 key_up(self.prev_direction)
 
@@ -244,48 +247,33 @@ class ClimbRope(Command):
         self.jump_rope_tolerance = float(jump_rope_tolerance)
 
     def main(self):
-        print(f"[DEBUG] ClimbRope: rope_start = {self.rope_start}, rope_end = {self.rope_end}, jump_rope_tolerance = {self.jump_rope_tolerance}")
         key_down('up')
-        print("[DEBUG] ClimbRope: Key down 'up'")
         
         #是否已爬超過繩子一半(至少上繩子或是已爬完)
         while config.enabled and (config.player_pos[1] > ((self.rope_start[1]- self.rope_end[1])/2 +  self.rope_end[1])) :
             mid_rope = (self.rope_start[1] - self.rope_end[1]) / 2 + self.rope_end[1]
             condition = config.player_pos[1] > mid_rope
-
-            print(f"player_pos[1]: {config.player_pos[1]}")
-            print(f"rope_start[1]: {self.rope_start[1]}, rope_end[1]: {self.rope_end[1]}")
-            print(f"mid_rope: {mid_rope}")
-            print(f"Condition result: {condition}")
             d_x = self.rope_start[0] - config.player_pos[0]
 
             # 走到繩子起點
             while True:
-                print(f"[DEBUG] ClimbRope: d_x = {d_x}")
-                
                 if d_x < 0:
                     key_down('left')
-                    print("[DEBUG] ClimbRope: Key down 'left'")
                 else:
                     key_down('right')
-                    print("[DEBUG] ClimbRope: Key down 'right'")
 
                 time.sleep(0.1)
                 key_up('left')
                 key_up('right')
-                print("[DEBUG] ClimbRope: Key up 'left' and 'right'")
 
                 # 更新 d_x
                 d_x = self.rope_start[0] - config.player_pos[0]
-                print(f"[DEBUG] ClimbRope: d_x after adjustment = {d_x}")
 
                 # 檢查是否符合退出條件
                 if not config.enabled or abs(d_x) <= self.jump_rope_tolerance:
                     break
             # 爬的動作
-            print("[DEBUG] ClimbRope: Reached rope_start, jumping")
             press(Key.JUMP, 1)
-            print("[DEBUG] ClimbRope: Jumped")
             key_down('left')
             time.sleep(0.2)
             key_up('left')
@@ -312,12 +300,10 @@ class ClimbRope(Command):
                 time.sleep(1)
                 key_up('up')
                 curr_x = config.player_pos[0]
-                print(f"[DEBUG] ClimbRope: curr_x = {curr_x}, config.player_pos[0] = {config.player_pos[0]}")
-    
+            # 爬完後，鬆開按鍵
             key_up('left')
             key_up('right')
         key_up('up')
-        print("[DEBUG] ClimbRope: Key up 'left', 'right', and 'up'")
 
 class JumpMove(Command):
     """跳，為了撿東西"""
@@ -334,7 +320,6 @@ class TwinStarAttack(Command):
     def __init__(self, backswing=0.3):
         super().__init__(locals())
         self.backswing = float(backswing)
-
 
     def main(self):
         press(Key.TWIN_STAR_ATTACK, 3)
