@@ -1,9 +1,8 @@
-GitPython
-keyboard
-mss
-numpy
-opencv-python-headless
-Pillow
-pygame
-pywin32
-
+keyboard==0.13.5
+mss==10.0.0
+numpy==2.3.0
+opencv_python==4.11.0.86
+opencv_python_headless==4.11.0.86
+Pillow==11.2.1
+pygame==2.6.1
+ultralytics==8.3.152

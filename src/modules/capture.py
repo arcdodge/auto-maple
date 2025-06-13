@@ -35,10 +35,6 @@ MM_BR_TEMPLATE = cv2.imread('assets/minimap_br_template.png', 0)
 DM_TL_TEMPLATE = cv2.imread('assets/dete_region_tl.png', 0)
 DM_BR_TEMPLATE = cv2.imread('assets/dete_region_br.png', 0)
 
-
-# Dete me name
-ME_NAME_TEMPLATE = cv2.imread('assets/me_name.png', 3)
-
 MMT_HEIGHT = max(MM_TL_TEMPLATE.shape[0], MM_BR_TEMPLATE.shape[0])
 MMT_WIDTH = max(MM_TL_TEMPLATE.shape[1], MM_BR_TEMPLATE.shape[1])
 
@@ -86,7 +82,7 @@ class Capture:
 
     def _main(self):
         """Constantly monitors the player's position and in-game events."""
-         mss.windows.CAPTUREBLT = 0
+        mss.windows.CAPTUREBLT = 0
         while True:
             # Calibrate screen capture
             handle = user32.FindWindowW(None, "MapleStory Worlds-Artale (繁體中文版)")
