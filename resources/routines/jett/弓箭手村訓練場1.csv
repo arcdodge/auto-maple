@@ -1,0 +1,72 @@
+*, x=0.13, y=0.848, frequency=1, skip=False, adjust=False
+    Walk, direction=left, duration=0.1
+    TwinStarAttack, backswing=0.3
+*, x=0.022, y=0.848, frequency=1, skip=False, adjust=False
+    Walk, direction=right, duration=2
+    TwinStarAttack, backswing=0.3
+    Walk, direction=right, duration=2
+    TwinStarAttack, backswing=0.3
+    TwinStarAttack, backswing=0.3
+    Walk, direction=right, duration=2
+    TwinStarAttack, backswing=0.3
+*, x=0.783, y=0.848, frequency=1, skip=False, adjust=True
+    JumpMove, jump_count=2
+    Walk, direction=left, duration=1
+    TwinStarAttack, backswing=0.3
+*, x=0.522, y=0.848, frequency=1, skip=False, adjust=False
+    ClimbRope, start_x=0.522, start_y=0.848, end_x=0.522, end_y=0.717, jump_rope_tolerance=0.05
+
+@, label=1to2
+*, x=0.522, y=0.717, frequency=1, skip=False, adjust=False
+    Walk, direction=left, duration=0.1
+    TwinStarAttack, backswing=0.3
+    Walk, direction=right, duration=0.1
+    TwinStarAttack, backswing=0.3
+    Walk, direction=right, duration=2.5
+    TwinStarAttack, backswing=0.3
+    TwinStarAttack, backswing=0.3
+*, x=0.761, y=0.717, frequency=1, skip=False, adjust=True
+    JumpMove, jump_count=2
+    Walk, direction=left, duration=2.5
+    TwinStarAttack, backswing=0.3
+    TwinStarAttack, backswing=0.3
+    Walk, direction=left, duration=2.5
+    TwinStarAttack, backswing=0.3
+    TwinStarAttack, backswing=0.3
+    Walk, direction=left, duration=2
+    TwinStarAttack, backswing=0.3
+    TwinStarAttack, backswing=0.3
+*, x=0.239, y=0.717, frequency=1, skip=False, adjust=True
+    JumpMove, jump_count=1
+*, x=0.370, y=0.717, frequency=1, skip=False, adjust=False
+    ClimbRope, start_x=0.370, start_y=0.717, end_x=0.370, end_y=0.609, jump_rope_tolerance=0.05
+
+@, label=2to3
+*, x=0.370, y=0.609, frequency=1, skip=False, adjust=True
+    Walk, direction=left, duration=0.1
+    TwinStarAttack, backswing=0.3
+    TwinStarAttack, backswing=0.3
+    TwinStarAttack, backswing=0.3
+*, x=0.272, y=0.609, frequency=1, skip=False, adjust=True
+    JumpMove, jump_count=1
+    Walk, direction=right, duration=2.5
+    TwinStarAttack, backswing=0.3
+    TwinStarAttack, backswing=0.3
+    Walk, direction=right, duration=2.5
+    TwinStarAttack, backswing=0.3
+    TwinStarAttack, backswing=0.3
+    TwinStarAttack, backswing=0.3
+    Walk, direction=right, duration=2.5
+    TwinStarAttack, backswing=0.3
+    TwinStarAttack, backswing=0.3
+*, x=0.707, y=0.609, frequency=1, skip=False, adjust=True
+    JumpMove, jump_count=2
+*, x=0.783, y=0.848, frequency=1, skip=False, adjust=False
+    Walk, direction=left, duration=2.5
+    TwinStarAttack, backswing=0.3
+    Walk, direction=left, duration=2.5
+    TwinStarAttack, backswing=0.3
+    Walk, direction=left, duration=2.5
+    TwinStarAttack, backswing=0.3
+    Walk, direction=left, duration=2.5
+    TwinStarAttack, backswing=0.3

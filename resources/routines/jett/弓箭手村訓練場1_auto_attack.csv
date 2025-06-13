@@ -1,0 +1,31 @@
+*, x=0.13, y=0.848, frequency=1, skip=False, adjust=False
+    MoveAndAttack, x=0.022, y=0.848, max_steps=15, forward_detection_width_multiplier=3, backward_detection_width_multiplier=1
+*, x=0.022, y=0.848, frequency=1, skip=False, adjust=False
+    MoveAndAttack, x=0.783, y=0.848, max_steps=15, forward_detection_width_multiplier=3, backward_detection_width_multiplier=1
+*, x=0.783, y=0.848, frequency=1, skip=False, adjust=True
+    JumpMove, jump_count=2
+    MoveAndAttack, x=0.522, y=0.848, max_steps=15, forward_detection_width_multiplier=3, backward_detection_width_multiplier=1
+*, x=0.522, y=0.848, frequency=1, skip=False, adjust=False
+    ClimbRope, start_x=0.522, start_y=0.848, end_x=0.522, end_y=0.717, jump_rope_tolerance=0.05
+
+@, label=1to2
+*, x=0.522, y=0.717, frequency=1, skip=False, adjust=False
+    MoveAndAttack, x=0.761, y=0.717, max_steps=15, forward_detection_width_multiplier=3, backward_detection_width_multiplier=1
+*, x=0.761, y=0.717, frequency=1, skip=False, adjust=True
+    JumpMove, jump_count=2
+    MoveAndAttack, x=0.239, y=0.717, max_steps=15, forward_detection_width_multiplier=3, backward_detection_width_multiplier=1
+*, x=0.239, y=0.717, frequency=1, skip=False, adjust=True
+    JumpMove, jump_count=1
+    MoveAndAttack, x=0.37, y=0.717, max_steps=15, forward_detection_width_multiplier=3, backward_detection_width_multiplier=1
+*, x=0.370, y=0.717, frequency=1, skip=False, adjust=False
+    ClimbRope, start_x=0.370, start_y=0.717, end_x=0.370, end_y=0.609, jump_rope_tolerance=0.05
+
+@, label=2to3
+*, x=0.370, y=0.609, frequency=1, skip=False, adjust=True
+    MoveAndAttack, x=0.272, y=0.609, max_steps=15, forward_detection_width_multiplier=3, backward_detection_width_multiplier=1
+*, x=0.272, y=0.609, frequency=1, skip=False, adjust=True
+    JumpMove, jump_count=1
+    MoveAndAttack, x=0.717, y=0.609, max_steps=15, forward_detection_width_multiplier=3, backward_detection_width_multiplier=1
+*, x=0.707, y=0.609, frequency=1, skip=False, adjust=True
+    JumpMove, jump_count=2
+*, x=0.783, y=0.848, frequency=1, skip=False, adjust=False
