@@ -1,14 +1,17 @@
 """A module for classifying directional arrows using TensorFlow."""
 
 import cv2
-import tensorflow as tf
+# import tensorflow as tf
 import numpy as np
 from src.common import utils
+
+from ultralytics import YOLO  # 導入 YOLO
 
 
 #########################
 #       Functions       #
 #########################
+
 def load_model():
     """
     Loads the saved model's weights into an Tensorflow model.
@@ -16,7 +19,73 @@ def load_model():
     """
 
     model_dir = f'assets/models/rune_model_rnn_filtered_cannied/saved_model'
-    return tf.saved_model.load(model_dir)
+    return None
+
+def detect_objects(image, confidence_threshold=0.85):
+    """
+    使用 YOLO 模型偵測圖片中的物件。
+    :param image:   The input image.
+    :param model:   YOLO 模型。如果為 None，則載入預設模型。
+    :param confidence_threshold: 置信度閾值。
+    :return:        一個字典，包含 Mob、Player 和 Rune 的位置列表。
+    """
+    model = YOLO(r"assets\models\best-player.pt", verbose=False)  # 載入預設模型
+
+    # 確保輸入是 BGR 三通道圖
+    if image.shape[2] == 4:
+        image = cv2.cvtColor(image, cv2.COLOR_BGRA2BGR)
+
+    # YOLO 預測並套用自訂信心閾值與 IoU 閾值
+    results = model.predict(image, conf=confidence_threshold, iou=0.5)
+    if not results:
+        return {"Mob": [], "Player": [], "Rune": []}
+    results = results[0]
+
+    # 取得帶有標註的圖片
+    annotated_img = results.plot()
+    # 縮小影像
+    scale_percent = 50
+    width = int(annotated_img.shape[1] * scale_percent / 100)
+    height = int(annotated_img.shape[0] * scale_percent / 100)
+    resized = cv2.resize(annotated_img, (width, height), interpolation=cv2.INTER_AREA)
+
+    # 顯示影像
+    cv2.imshow("YOLO Detection", resized)
+    cv2.waitKey(1)
+    
+    mob_positions = []
+    player_positions = []
+    rune_positions = []
+
+    for box in results.boxes:
+        conf = float(box.conf)
+        if conf < confidence_threshold:
+            continue  # 跳過低置信度的偵測
+
+        x1, y1, x2, y2 = map(int, box.xyxy[0])
+        cls_id = int(box.cls[0].item())
+        class_name = model.names[cls_id]
+        label = f'{class_name}: {conf:.2f}'
+
+        # 根據類別儲存位置
+        if model.names[cls_id] == 'Mob':
+            mob_positions.append(((x1, y1), (x2, y2)))
+        elif model.names[cls_id] == 'Player':
+            player_positions.append(((x1, y1), (x2, y2)))
+        elif model.names[cls_id] == 'Rune':
+            rune_positions.append(((x1, y1), (x2, y2)))
+
+    # 畫框與標籤
+        cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 2)
+        cv2.putText(image, label, (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX,
+                    0.9, (0, 255, 0), 2)
+    
+    return {
+        "Mob": mob_positions,
+        "Player": player_positions,
+        "Rune": rune_positions
+    }
+
 
 
 def canny(image):
@@ -59,8 +128,8 @@ def run_inference_for_single_image(model, image):
 
     image = np.asarray(image)
 
-    input_tensor = tf.convert_to_tensor(image)
-    input_tensor = input_tensor[tf.newaxis,...]
+    input_tensor = null
+    input_tensor = null
 
     model_fn = model.signatures['serving_default']
     output_dict = model_fn(input_tensor)

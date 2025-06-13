@@ -71,17 +71,39 @@ def separate_args(arguments):
             args.append(a)
     return args, kwargs
 
-
 def single_match(frame, template):
-    """
-    Finds the best match within FRAME.
-    :param frame:       The image in which to search for TEMPLATE.
-    :param template:    The template to match with.
-    :return:            The top-left and bottom-right positions of the best match.
-    """
+    assert template is not None, "Template is None — check if image file path is correct."
+    assert frame is not None, "Frame is None — screenshot may have failed."
 
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    result = cv2.matchTemplate(gray, template, cv2.TM_CCOEFF)
+    print(f"[DEBUG] template shape: {template.shape}, dtype: {template.dtype}")
+    print(f"[DEBUG] frame shape: {frame.shape}, dtype: {frame.dtype}")
+
+    # 處理 template 灰階轉換
+    if template.ndim == 3:
+        if template.shape[2] == 4:
+            template = cv2.cvtColor(template, cv2.COLOR_BGRA2GRAY)
+        elif template.shape[2] == 3:
+            template = cv2.cvtColor(template, cv2.COLOR_BGR2GRAY)
+        elif template.shape[2] == 1:
+            template = np.squeeze(template, axis=2)  # (H, W, 1) → (H, W)
+        else:
+            raise ValueError(f"Unsupported number of template channels: {template.shape[2]}")
+
+    # 處理 frame 灰階轉換
+    if frame.ndim == 3:
+        if frame.shape[2] == 4:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGRA2GRAY)
+        elif frame.shape[2] == 3:
+            frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        elif frame.shape[2] == 1:
+            frame = np.squeeze(frame, axis=2)
+        else:
+            raise ValueError(f"Unsupported number of frame channels: {frame.shape[2]}")
+
+    assert template.ndim == 2 and frame.ndim == 2, "Both images must be 2D grayscale"
+    assert template.dtype == np.uint8 and frame.dtype == np.uint8, "Both must be 8-bit grayscale"
+
+    result = cv2.matchTemplate(frame, template, cv2.TM_CCOEFF)
     _, _, _, top_left = cv2.minMaxLoc(result)
     w, h = template.shape[::-1]
     bottom_right = (top_left[0] + w, top_left[1] + h)
@@ -225,6 +247,100 @@ def rand_float(start, end):
     return (end - start) * random() + start
 
 
+def find_color_template(frame, template, threshold=0.95):
+    """
+    Finds all matches in FRAME that are similar to TEMPLATE by at least THRESHOLD.
+    :param frame:       The image in which to search.
+    :param template:    The template to match with.
+    :param threshold:   The minimum percentage of TEMPLATE that each result must match.
+    :return:            An array of matches that exceed THRESHOLD.
+    """
+
+    if template.shape[0] > frame.shape[0] or template.shape[1] > frame.shape[1]:
+        return []
+    # gray = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+
+    # **將 FRAME 轉換為 HSV**
+    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    
+    # **將 TEMPLATE 也轉換為 HSV**
+    hsv_template = cv2.cvtColor(template, cv2.COLOR_BGR2HSV)
+
+    # 定義黃色的 HSV 範圍
+    lower_yellow = np.array([20, 100, 100])
+    upper_yellow = np.array([30, 255, 255])
+
+    # 建立遮罩，只保留黃色範圍
+    mask_frame = cv2.inRange(hsv_frame, lower_yellow, upper_yellow)
+    mask_template = cv2.inRange(hsv_template, lower_yellow, upper_yellow)
+
+    # **套用遮罩，只保留黃色部分**
+    yellow_frame = cv2.bitwise_and(frame, frame, mask=mask_frame)
+    yellow_template = cv2.bitwise_and(template, template, mask=mask_template)
+
+    # **執行匹配**
+    result = cv2.matchTemplate(yellow_frame[:, :, 1], yellow_template[:, :, 1], cv2.TM_CCOEFF_NORMED)
+
+    locations = np.where(result >= threshold)
+    locations = list(zip(*locations[::-1]))
+
+    # **計算匹配點的中心**
+    results = []
+    for p in locations:
+        x = int(round(p[0] + yellow_template.shape[1] / 2))
+        y = int(round(p[1] + yellow_template.shape[0] / 2))
+        results.append((x, y))
+
+    return results
+
+
+def find_white_text_template(frame, template, threshold=0.4):
+    """
+    使用白色對比增強的方式，在 frame 中找出與 template 相似的文字區塊座標。
+    :param frame:       待搜尋圖片 (np.array, e.g., screenshot).
+    :param template:    名字牌模板圖片 (cv2.imread).
+    :param threshold:   匹配分數的閥值 (0~1).
+    :return:            中心點座標 list of (x, y).
+    """
+
+    if template.shape[0] > frame.shape[0] or template.shape[1] > frame.shape[1]:
+        return []
+
+    # Convert to HSV
+    hsv_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    hsv_template = cv2.cvtColor(template, cv2.COLOR_BGR2HSV)
+
+    # White mask in HSV
+    lower_white = np.array([0, 0, 200])
+    upper_white = np.array([180, 55, 255])
+    mask_frame = cv2.inRange(hsv_frame, lower_white, upper_white)
+    mask_template = cv2.inRange(hsv_template, lower_white, upper_white)
+
+    # Morphology to reduce noise
+    kernel = np.ones((2, 2), np.uint8)
+    mask_frame = cv2.morphologyEx(mask_frame, cv2.MORPH_OPEN, kernel)
+    mask_template = cv2.morphologyEx(mask_template, cv2.MORPH_OPEN, kernel)
+
+    # Edge detection on masked regions
+    edges_frame = cv2.Canny(mask_frame, 50, 150)
+    edges_template = cv2.Canny(mask_template, 50, 150)
+
+    # Match using edges
+    result = cv2.matchTemplate(edges_frame, edges_template, cv2.TM_CCOEFF_NORMED)
+
+    # Detect good matches
+    locations = np.where(result >= threshold)
+    locations = list(zip(*locations[::-1]))  # (x, y)
+
+    # Convert to center points
+    results = []
+    for p in locations:
+        x = int(round(p[0] + template.shape[1] / 2))
+        y = int(round(p[1] + template.shape[0] / 2))
+        results.append((x, y))
+
+    return results
+
 ##########################
 #       Threading        #
 ##########################
@@ -250,7 +366,7 @@ class Async(threading.Thread):
 
 
 def async_callback(context, function, *args, **kwargs):
-    """Returns a callback function that can be run asynchronously by the GUI."""
+    "Returns a callback function that can be run asynchronously by the GUI."
 
     def f():
         task = Async(function, *args, **kwargs)

@@ -9,6 +9,10 @@ import mss.windows
 import numpy as np
 from src.common import config, utils
 from ctypes import wintypes
+from datetime import datetime
+from ultralytics import YOLO
+from src.detection import detection
+
 user32 = ctypes.windll.user32
 user32.SetProcessDPIAware()
 
@@ -27,12 +31,20 @@ WINDOWED_OFFSET_LEFT = 10
 MM_TL_TEMPLATE = cv2.imread('assets/minimap_tl_template.png', 0)
 MM_BR_TEMPLATE = cv2.imread('assets/minimap_br_template.png', 0)
 
+# The top-left and bottom-right corners of the dete mob region
+DM_TL_TEMPLATE = cv2.imread('assets/dete_region_tl.png', 0)
+DM_BR_TEMPLATE = cv2.imread('assets/dete_region_br.png', 0)
+
+
+# Dete me name
+ME_NAME_TEMPLATE = cv2.imread('assets/me_name.png', 3)
+
 MMT_HEIGHT = max(MM_TL_TEMPLATE.shape[0], MM_BR_TEMPLATE.shape[0])
 MMT_WIDTH = max(MM_TL_TEMPLATE.shape[1], MM_BR_TEMPLATE.shape[1])
 
 # The player's symbol on the minimap
-PLAYER_TEMPLATE = cv2.imread('assets/player_template.png', 0)
-PT_HEIGHT, PT_WIDTH = PLAYER_TEMPLATE.shape
+PLAYER_TEMPLATE = cv2.imread('assets/player_template.png', cv2.IMREAD_COLOR)
+PT_HEIGHT, PT_WIDTH = PLAYER_TEMPLATE.shape[:2]
 
 
 class Capture:
@@ -51,12 +63,13 @@ class Capture:
         self.minimap = {}
         self.minimap_ratio = 1
         self.minimap_sample = None
+        self.game_screen_sample = None
         self.sct = None
         self.window = {
             'left': 0,
             'top': 0,
-            'width': 1366,
-            'height': 768
+            'width': 1920,
+            'height': 1200
         }
 
         self.ready = False
@@ -64,19 +77,19 @@ class Capture:
         self.thread = threading.Thread(target=self._main)
         self.thread.daemon = True
 
+
+        
     def start(self):
         """Starts this Capture's thread."""
-
         print('\n[~] Started video capture')
         self.thread.start()
 
     def _main(self):
         """Constantly monitors the player's position and in-game events."""
-
-        mss.windows.CAPTUREBLT = 0
+         mss.windows.CAPTUREBLT = 0
         while True:
             # Calibrate screen capture
-            handle = user32.FindWindowW(None, 'MapleStory')
+            handle = user32.FindWindowW(None, "MapleStory Worlds-Artale (繁體中文版)")
             rect = wintypes.RECT()
             user32.GetWindowRect(handle, ctypes.pointer(rect))
             rect = (rect.left, rect.top, rect.right, rect.bottom)
@@ -106,6 +119,24 @@ class Capture:
             self.minimap_sample = self.frame[mm_tl[1]:mm_br[1], mm_tl[0]:mm_br[0]]
             self.calibrated = True
 
+            dm_tl, _ = utils.single_match(self.frame, DM_TL_TEMPLATE)
+            _, dm_br = utils.single_match(self.frame, DM_BR_TEMPLATE)
+            width = dm_br[0] - dm_tl[0]
+            height = dm_br[1] - dm_tl[1]
+            game_x = int(dm_tl[0])
+            game_y = int(dm_tl[1])
+            game_width = int(width)
+            game_height = int(height)
+            
+            new_width = int(width * 0.8)
+            new_height = int(height / 2)
+            new_game_x = int(dm_tl[0] + (width - new_width) / 2)
+            new_game_y = int(dm_tl[1] + new_height / 2)
+
+            game_screen = self.frame[game_y:game_y + height, game_x:game_x + width]
+            self.game_screen_sample = self.frame[new_game_y:new_game_y + new_height, new_game_x:new_game_x + new_width]
+            game_screen = self.frame[new_game_y:new_game_y + new_height, new_game_x:new_game_x + new_width]
+
             with mss.mss() as self.sct:
                 while True:
                     if not self.calibrated:
@@ -118,9 +149,9 @@ class Capture:
 
                     # Crop the frame to only show the minimap
                     minimap = self.frame[mm_tl[1]:mm_br[1], mm_tl[0]:mm_br[0]]
-
+                    # minimap = cv2.cvtColor(minimap, cv2.COLOR_BGRA2BGR)
                     # Determine the player's position
-                    player = utils.multi_match(minimap, PLAYER_TEMPLATE, threshold=0.8)
+                    player = utils.find_color_template(minimap, PLAYER_TEMPLATE, threshold=0.7)
                     if player:
                         config.player_pos = utils.convert_to_relative(player[0], minimap)
 
@@ -135,7 +166,22 @@ class Capture:
 
                     if not self.ready:
                         self.ready = True
-                    time.sleep(0.001)
+                    # Detect game screen
+                    if dm_tl and dm_br:
+                        game_screen = self.frame[new_game_y:new_game_y + new_height, new_game_x:new_game_x + new_width]
+
+                        # 確保輸入是 BGR 三通道圖
+                        if game_screen.shape[2] == 4:
+                            game_screen = cv2.cvtColor(game_screen, cv2.COLOR_BGRA2BGR)
+                        # Call detect_objects and store the results in config
+                        detections = detection.detect_objects(game_screen)
+                        config.mob_pos = detections.get('Mob', [])
+                        player_detections = detections.get('Player')
+                        if player_detections:
+                            config.player_pos_in_attack_region = player_detections
+                        config.rune_pos = detections.get('Rune', [])
+                        
+                    time.sleep(0.05)
 
     def screenshot(self, delay=1):
         try:
